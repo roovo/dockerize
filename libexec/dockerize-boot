@@ -9,13 +9,13 @@
 #   dockerize boot hi_sinatra:v2
 #   dockerize boot cambridge-healthcare/hi_sinatra-docker hi_sinatra
 #
-# A directory with the image name must exist in $DOCKER_GITHUB_REPOS.
+# A directory with the image name must exist in $DOCKER_GITLAB_REPOS.
 
 set -e
 
 if [ -z "$1" ]
 then
-  echo "Must specify an image name or github user/repository"
+  echo "Must specify an image name or gitlab user/repository"
   exit 1
 fi
 
@@ -26,16 +26,16 @@ shift
 docker_image="${docker_image_and_tag[0]}"
 docker_image_tag="${docker_image_and_tag[1]:-latest}"
 
-# If docker_image includes a / then we assume that we're dealing with a github repository
+# If docker_image includes a / then we assume that we're dealing with a gitlab repository
 if [[ $docker_image =~ "/" ]]
 then
   # Clone and build if necessary
-  $__exec "dockerize github $args"
+  $__exec "dockerize gitlab $args"
 
-  github_user_and_repo=(${docker_image/\// })
-  docker_image="${1:-${github_user_and_repo[1]}}"
+  gitlab_user_and_repo=(${docker_image/\// })
+  docker_image="${1:-${gitlab_user_and_repo[1]}}"
   docker_image_tag="${docker_image_and_tag[1]:-master}"
-  cloned_repository="$DOCKER_GITHUB_REPOS/$docker_image"
+  cloned_repository="$DOCKER_GITLAB_REPOS/$docker_image"
   $__exec "cd $cloned_repository"
   commit_sha="$($__exec git rev-parse --short HEAD)"
   docker_image_tag="${docker_image_tag}.${commit_sha}"

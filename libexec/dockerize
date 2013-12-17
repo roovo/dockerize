@@ -24,10 +24,10 @@ then
   $__exec "mkdir -p $DOCKER_CIDS_DIR"
 fi
 
-export DOCKER_GITHUB_REPOS="${DOCKER_GITHUB_REPOS:-$HOME/.docker/github_repositories}"
-if [ ! -d "$DOCKER_GITHUB_REPOS" ]
+export DOCKER_GITLAB_REPOS="${DOCKER_GITLAB_REPOS:-$HOME/.docker/gitlab_repositories}"
+if [ ! -d "$DOCKER_GITLAB_REPOS" ]
 then
-  $__exec "mkdir -p $DOCKER_GITHUB_REPOS"
+  $__exec "mkdir -p $DOCKER_GITLAB_REPOS"
 fi
 
 resolve_link() {
