@@ -91,5 +91,5 @@ then
   echo "Container ${docker_image}.${docker_image_tag} already running"
 else
   $__exec "rm -f $cidfile"
-  $__exec "dockerize run -cidfile $cidfile $envs -d $docker_image:$docker_image_tag"
+  $__exec "dockerize run -cidfile $cidfile $envs-p 8000 -d $docker_image:$docker_image_tag"
 fi
