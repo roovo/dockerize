@@ -90,7 +90,7 @@ then
   $__exec "env GIT_SSL_NO_VERIFY=true git clone https://gitlab.nat.bt.com/${gitlab_repo}.git $cloned_repository"
   $__exec "cd $cloned_repository"
 else
-  $__exec "cd $cloned_repository && git fetch"
+  $__exec "cd $cloned_repository && env GIT_SSL_NO_VERIFY=true git fetch"
 fi
 
 $__exec "env GIT_SSL_NO_VERIFY=true git checkout -f origin/$gitlab_repo_branch"
