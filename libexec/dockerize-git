@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 #
-# Usage: dockerize gitlab user/repository[:branch] [docker_image]
+# Usage: dockerize git user/repository[:branch] [docker_image]
 #
-# Summary: Build images from gitlab repositories
+# Summary: Build images from git repositories
 #
 # Help: A Docker image will be built from repositories that contain a Dockerfile
 #
-#   dockerize gitlab rupert/sinatra_docker_test sinatra_docker_test
+#   dockerize git rupert/sinatra_docker_test sinatra_docker_test
 #
 # Dockerize adds a few conventions on top of Docker's default build command:
 #
-# * gitlab credentials management (caches or stores)
-# * always clones the gitlab repository
+# * git credentials management (caches or stores)
+# * always clones the git repository
 # * always builds from the local directory (think ADD . /app_name)
 # * enables you to leverage the ADD command to its full potential
+
+# git_uri="gitlab.nat.bt.com"
+git_uri="github.com"
 
 if [ -z "$(type -p git)" ]
 then
@@ -30,7 +33,7 @@ then
   exit 1
 fi
 
-# Setting up gitlab credentials caching
+# Setting up git credentials caching
 # There are 2 requirements for this:
 #   1. git >= 1.7.9
 #   2. git pull via https
@@ -41,30 +44,30 @@ fi
 #
 if [[ ! -e "$HOME/.git-credentials" && ! -e "$HOME/.no_prompting_for_git_credentials" ]]
 then
-  echo "Should git manage gitlab credentials?"
-  gitlab_credentials_options=(
+  echo "Should git manage git credentials?"
+  git_credentials_options=(
     "No, don't manage credentials"
     "Cache credentials for 10 minutes"
     "Store credentials in plaintext"
   )
-  select answer in "${gitlab_credentials_options[@]}"
+  select answer in "${git_credentials_options[@]}"
   do
     touch "$HOME/.no_prompting_for_git_credentials"
 
     case $answer in
-    "${gitlab_credentials_options[0]}" )
+    "${git_credentials_options[0]}" )
       break
       ;;
-    "${gitlab_credentials_options[1]}" )
+    "${git_credentials_options[1]}" )
       git config --global credential.helper cache
       break
       ;;
-    "${gitlab_credentials_options[2]}" )
+    "${git_credentials_options[2]}" )
       git config --global credential.helper store
-      echo "Storing gitlab credentials in plaintext"
-      read -p "Gitlab username: " gitlab_username
-      read -p "Gitlab password: " gitlab_password
-      echo "https://$gitlab_username:$gitlab_password@gitlab.nat.bt.com" > $HOME/.git-credentials
+      echo "Storing git credentials in plaintext"
+      read -p "Git username: " git_username
+      read -p "Git password: " git_password
+      echo "https://$git_username:$git_password@${git_uri}" > $HOME/.git-credentials
       break
       ;;
     esac
@@ -73,35 +76,35 @@ fi
 
 if [ -z "$1" ]
 then
-  echo "Must specify a gitlab user/repository"
+  echo "Must specify a git user/repository"
   exit 1
 fi
 
-gitlab_repo_name_and_branch=(${1/:/ })
-gitlab_repo="${gitlab_repo_name_and_branch[0]}"
-gitlab_repo_branch="${gitlab_repo_name_and_branch[1]:-master}"
+git_repo_name_and_branch=(${1/:/ })
+git_repo="${git_repo_name_and_branch[0]}"
+git_repo_branch="${git_repo_name_and_branch[1]:-master}"
 shift
 
-docker_image="${1:-${gitlab_repo/*\//}}"
-cloned_repository="$DOCKER_GITLAB_REPOS/$docker_image"
+docker_image="${1:-${git_repo/*\//}}"
+cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
 if [ ! -e "$cloned_repository" ]
 then
-  $__exec "env GIT_SSL_NO_VERIFY=true git clone https://gitlab.nat.bt.com/${gitlab_repo}.git $cloned_repository"
+  $__exec "env GIT_SSL_NO_VERIFY=true git clone https://${git_uri}/${git_repo}.git $cloned_repository"
   $__exec "cd $cloned_repository"
 else
   $__exec "cd $cloned_repository && env GIT_SSL_NO_VERIFY=true git fetch"
 fi
 
-$__exec "env GIT_SSL_NO_VERIFY=true git checkout -f origin/$gitlab_repo_branch"
+$__exec "env GIT_SSL_NO_VERIFY=true git checkout -f origin/$git_repo_branch"
 if [ $? -ne 0 ]
 then
-  echo "Branch origin/$gitlab_repo_branch does not exist"
+  echo "Branch origin/$git_repo_branch does not exist"
   exit 1
 fi
 
 commit_sha="$($__exec git rev-parse --short HEAD)"
-docker_image_tag="${gitlab_repo_branch}.${commit_sha}"
+docker_image_tag="${git_repo_branch}.${commit_sha}"
 
 if [[ $PWD == $cloned_repository && ! -e Dockerfile ]]
 then
