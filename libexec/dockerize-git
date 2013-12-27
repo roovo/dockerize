@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 # Summary: Build images from git repositories
-# Usage: dockerize git [-k|--insecure] [--] <repository>[:branch] [<directory>]
+# Usage: dockerize git [-b|--branch <name>] [-k|--insecure] [--] <repository> [<directory>]
 
 # Help: NAME
 #         dockerize-git - Build a docker image from a git repository
 
 # SYNOPISIS
-#         dockerize git [-k|--insecure] [--] <repository>[:branch] [<directory>]
+#         dockerize git [-b|--branch <name>] [-k|--insecure] [--] <repository> [<directory>]
 
 # DESCRIPTION
 #         Clones or fetches changes from a git repository, then
@@ -60,6 +60,9 @@
 #             test                feature-branch.093e707    ....
 
 # OPTIONS
+#         -b <name>, --branch <name>
+#             Specify the branch to build.
+#
 #         -k, --insecure
 #             Don't verify SSL certificates when performing remote
 #             remote git operations (sets the GIT_SSL_NO_VERIFY
@@ -77,6 +80,7 @@ then
 fi
 
 non_options=
+git_repo_branch="master"
 
 until [ -z "$1" ]; do
   case $1 in
@@ -84,8 +88,12 @@ until [ -z "$1" ]; do
       dockerize help "$APP_NAME"
       exit 0
       ;;
+    --branch|-b )
+      shift
+      git_repo_branch=$1
+      ;;
     --insecure|-k )
-      INSECURE_GIT=1
+      insecure_git=1
       ;;
     -- )
       shift
@@ -112,7 +120,7 @@ until [ -z "$1" ]; do
 done
 
 git_command="git"
-if [ "$INSECURE_GIT" = "1" ]; then
+if [ "$insecure_git" = "1" ]; then
   git_command="env GIT_SSL_NO_VERIFY=true git"
 fi
 
@@ -120,14 +128,11 @@ set -- $non_options
 
 git_repo_uri="${1}"
 git_repo_basename=$(basename "$git_repo_uri")
-git_repo_name_and_branch=(${git_repo_basename/:/ })
-git_repo_name="${git_repo_name_and_branch[0]}"
-git_repo="${git_repo_name%.*}"
-git_repo_branch="${git_repo_name_and_branch[1]:-master}"
+git_repo_name="${git_repo_basename%.*}"
 
 shift
 
-docker_image="${1:-${git_repo/*\//}}"
+docker_image="${1:-${git_repo_name/*\//}}"
 cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
 if [ ! -e "$cloned_repository" ]
