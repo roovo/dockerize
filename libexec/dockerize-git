@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 # Summary: Build images from git repositories
-# Usage: dockerize git <repository>[:branch] [<directory>]
+# Usage: dockerize git [-k|--insecure] [--] <repository>[:branch] [<directory>]
 
 # Help: NAME
 #         dockerize-git - Build a docker image from a git repository
 
 # SYNOPISIS
-#         dockerize git <repository>[:branch] [<directory>]
+#         dockerize git [-k|--insecure] [--] <repository>[:branch] [<directory>]
 
 # DESCRIPTION
 #         Clones or fetches changes from a git repository, then
@@ -59,17 +59,61 @@
 #             REPOSITORY          TAG                       ....
 #             test                feature-branch.093e707    ....
 
+# OPTIONS
+#         -k, --insecure
+#             Don't verify SSL certificates when performing remote
+#             remote git operations (sets the GIT_SSL_NO_VERIFY
+#             environment variable when running commands).
+
+set -e
+
+APP_NAME="git"
+
 if [ -z "$(type -p git)" ]
 then
   echo "Cannot find git. Is git installed and available in the PATH?"
   exit 1
 fi
 
-if [ -z "$1" ]
-then
-  echo "Must specify a git repsoitory URL"
-  exit 1
+non_options=
+
+until [ -z "$1" ]; do
+  case $1 in
+    --help|-h )
+      dockerize help "$APP_NAME"
+      exit 0
+      ;;
+    --insecure|-k )
+      INSECURE_GIT=1
+      ;;
+    -- )
+      shift
+      non_options="$non_options $@"
+      break
+      ;;
+    -* )
+      echo "Unknown option: $1"
+      echo "Usage: dockerize $APP_NAME [-k|--insecure] [--] <repository>[:branch] [<directory>]"
+      echo "       [try \`dockerize $APP_NAME -h\` for more information]"
+      exit 1
+      ;;
+    * )
+      non_options="$non_options $1"
+  esac
+
+  shift
+
+  if [ "$#" = "0" ]; then
+    break
+  fi
+done
+
+git_command="git"
+if [ "$INSECURE_GIT" = "1" ]; then
+  git_command="env GIT_SSL_NO_VERIFY=true git"
 fi
+
+set -- $non_options
 
 git_repo_uri="${1}"
 git_repo_basename=$(basename "$git_repo_uri")
@@ -85,13 +129,13 @@ cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
 if [ ! -e "$cloned_repository" ]
 then
-  $__exec "env GIT_SSL_NO_VERIFY=true git clone ${git_repo_uri} $cloned_repository"
+  $__exec "${git_command} clone ${git_repo_uri} $cloned_repository"
   $__exec "cd $cloned_repository"
 else
-  $__exec "cd $cloned_repository && env GIT_SSL_NO_VERIFY=true git fetch"
+  $__exec "cd $cloned_repository && ${git_command} fetch"
 fi
 
-$__exec "env GIT_SSL_NO_VERIFY=true git checkout -f origin/$git_repo_branch"
+$__exec "${git_command} checkout -f origin/$git_repo_branch"
 if [ $? -ne 0 ]
 then
   echo "Branch origin/$git_repo_branch does not exist"
