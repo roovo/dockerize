@@ -19,7 +19,7 @@
 #
 #         o   dockerize git git@gitlab.example.com:owner/test.git
 #
-#         o   dockerize git /path/to/repository/test
+#         o   dockerize git file:///path/to/repository/test
 
 #         A local copy of the repository is cloned into the
 #         directory:

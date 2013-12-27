@@ -1,95 +1,126 @@
 #!/usr/bin/env bash
 #
-# Usage: dockerize boot image[:tag]
+# Summary: Run container from image or git repository
+
+# Help: NAME
+#         dockerize-boot - Run container from image or git
+
+# SYNOPISIS
+#         dockerize boot [--] <image> [<tag>]
+#         dockerize boot [options] [--] <repository> [<directory>]
+
+# DESCRIPTION
+#         In the first form runs up a new container from the
+#         specified image and tag. If no tag is given then
+#         the latest is assumed.
 #
-# Summary: Runs Docker container from image, builds master image if necessary
+#         In the second form if performs a `dockerize git`
+#         using the given options then runs up a new container
+#         from the most recent version of the code available
+#         for the chosen branch.  If no branch is given 'master'
+#         is assumed.
 #
-# Help: Run containers from a pre-built Docker image, build one on-the-fly
+#         The second form is assumed if the first non-option
+#         contains a ':'.  This means that <image> cannot contain
+#         a colon, and <repository> must contain one (so you must
+#         use the file:///path/to/repository syntax to refer to
+#         local repositories).
+
+# OPTIONS
+#         -b <name>, --branch <name>
+#             Specify the branch to build. If no branch is given
+#             'master' is assumed. Ignored if not using the git
+#             version of the command.
 #
-#   dockerize boot hi_sinatra:v2
-#   dockerize boot cambridge-healthcare/hi_sinatra-docker hi_sinatra
+#         -h, --help
+#             Show this help information.
 #
-# A directory with the image name must exist in $DOCKER_GIT_REPOS.
+#         -k, --insecure
+#             Don't verify SSL certificates when performing remote
+#             remote git operations (sets the GIT_SSL_NO_VERIFY
+#             environment variable when running commands). Ignored
+#             if not using the git version of the command.
 
 set -e
 
-if [ -z "$1" ]
-then
-  echo "Must specify an image name or git user/repository"
+APP_NAME="boot"
+
+original_args="$@"
+
+non_options=
+git_repo_branch="master"
+
+until [ -z "$1" ]; do
+  case $1 in
+    --branch|-b )
+      shift
+      git_repo_branch=$1
+      ;;
+    --help|-h )
+      dockerize help "$APP_NAME"
+      exit 0
+      ;;
+    --insecure|-k )
+      ;;
+    -- )
+      shift
+      non_options="$non_options $@"
+      break
+      ;;
+    -* )
+      echo    "error: unknown option: $1" 1>&2
+      echo    "usage: dockerize $APP_NAME [--] <image> [<tag>]" 1>&2
+      echo -e "   or: dockerize $APP_NAME [options] [--] <repository> [<directory>]\n" 1>&2
+      echo    "    -b, --branch           build from branch" 1>&2
+      echo    "    -h, --help             show detailed help" 1>&2
+      echo -e "    -k, --insecure         don't check SSL certificates\n" 1>&2
+      exit 1
+      ;;
+    * )
+      non_options="$non_options $1"
+  esac
+
+  shift
+
+  if [ "$#" = "0" ]; then
+    break
+  fi
+done
+
+set -- ${non_options}
+
+if [ -z "$1" ]; then
+  echo -e "error: you must specify an image name or git repository\n" 1>&2
   exit 1
 fi
 
-args="$@"
+docker_image="${1}"
+docker_image_tag="${2:-latest}"
 
-docker_image_and_tag=(${1/:/ })
-shift
-docker_image="${docker_image_and_tag[0]}"
-docker_image_tag="${docker_image_and_tag[1]:-latest}"
+if [[ "$docker_image" =~ ":" ]]; then
+  $__exec "dockerize git $original_args"
 
-# If docker_image includes a / then we assume that we're dealing with a git repository
-if [[ $docker_image =~ "/" ]]
-then
-  # Clone and build if necessary
-  $__exec "dockerize git $args"
-
-  git_user_and_repo=(${docker_image/\// })
-  docker_image="${1:-${git_user_and_repo[1]}}"
-  docker_image_tag="${docker_image_and_tag[1]:-master}"
+  git_repo_uri="${docker_image}"
+  git_repo_basename=$(basename "$git_repo_uri")
+  docker_image="${git_repo_basename%.*}"
+  docker_image_tag="${git_repo_branch}"
   cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
+
   $__exec "cd $cloned_repository"
   commit_sha="$($__exec git rev-parse --short HEAD)"
   docker_image_tag="${docker_image_tag}.${commit_sha}"
 
   # For git branches, we don't want more than 1 container per commit
-  if [[ -n $(dockerize ps | grep $docker_image | grep $docker_image_tag) ]]
-  then
+  if [[ -n $(dockerize ps | grep $docker_image | grep $docker_image_tag) ]]; then
     echo "Container $docker_image:$docker_image_tag already running"
     exit 0
   fi
 fi
 
-if [[ -e .dockerize.envs ]]
-then
-  # Extract ENVs from .dockerize.envs
-  envs="$(dockerize envs $(cat .dockerize.envs | tr "\n" " "))"
-fi
-
-if [[ -e .dockerize.containers ]]
-then
-  containers="$(cat .dockerize.containers || '')"
-
-  for _container in ${containers[@]}
-  do
-    _container_image_tag_and_port=(${_container//:/ })
-    _container_image="${_container_image_tag_and_port[0]}"
-    _container_image_tag="${_container_image_tag_and_port[1]:-latest}"
-    _container_image_port="${_container_image_tag_and_port[2]}"
-    # Always strip the SHA, we only want 1 container dependency per branch
-    _container_cidfile="$DOCKER_CIDS_DIR/${docker_image}.${docker_image_tag/\.*/}.${_container_image/\//.}.cid"
-
-    __command="dockerize run -cidfile $_container_cidfile $envs -d"
-    [[ -n $_container_image_port ]] && __command="$__command -p $_container_image_port"
-    __command="$__command $_container_image:$_container_image_tag"
-
-    if [[ -e $_container_cidfile && -n $(dockerize ps | grep $(cat $_container_cidfile)) ]]
-    then
-      echo "Container ${docker_image}.${docker_image_tag}.${_container_image/\//.} already running"
-    else
-      $__exec "rm -f $_container_cidfile"
-      $__exec $__command
-    fi
-
-    _container_image_upcase=$(echo ${_container_image/*\//} | tr '[a-z]' '[A-Z]')
-    # expose hostnames for all dependent containers as envs
-    envs="$envs -e ${_container_image_upcase}_HOST=$(dockerize show $_container_cidfile IPAddress)"
-  done
-fi
-
 cidfile="$DOCKER_CIDS_DIR/${docker_image}.${docker_image_tag}.cid"
-if [[ -e $cidfile && -n $(dockerize ps | grep $(cat $cidfile)) ]]
-then
+if [[ -e $cidfile && -s $cidfile && -n $(dockerize ps | grep $(cat $cidfile)) ]]; then
   echo "Container ${docker_image}.${docker_image_tag} already running"
 else
   $__exec "rm -f $cidfile"
-  $__exec "dockerize run -cidfile $cidfile $envs-p 8000 -d $docker_image:$docker_image_tag"
+  $__exec "dockerize run -cidfile $cidfile $envs -d $docker_image:$docker_image_tag"
 fi
