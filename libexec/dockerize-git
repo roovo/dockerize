@@ -71,7 +71,8 @@ APP_NAME="git"
 
 if [ -z "$(type -p git)" ]
 then
-  echo "Cannot find git. Is git installed and available in the PATH?"
+  echo "Cannot find git. Is git installed and available in the PATH?" 1>&2
+  echo "" 1>&2
   exit 1
 fi
 
@@ -92,9 +93,11 @@ until [ -z "$1" ]; do
       break
       ;;
     -* )
-      echo "Unknown option: $1"
-      echo "Usage: dockerize $APP_NAME [-k|--insecure] [--] <repository>[:branch] [<directory>]"
-      echo "       [try \`dockerize $APP_NAME -h\` for more information]"
+      echo "error: unknown option: $1" 1>&2
+      echo "usage: dockerize $APP_NAME [-k|--insecure] [--] <repository>[:branch] [<directory>]" 1>&2
+      echo "" 1>&2
+      echo "       [try \`dockerize $APP_NAME -h\` for more information]" 1>&2
+      echo "" 1>&2
       exit 1
       ;;
     * )
@@ -138,7 +141,8 @@ fi
 $__exec "${git_command} checkout -f origin/$git_repo_branch"
 if [ $? -ne 0 ]
 then
-  echo "Branch origin/$git_repo_branch does not exist"
+  echo "error: branch $git_repo_branch does not exist" 1>&2
+  echo "" 1>&2
   exit 1
 fi
 
@@ -147,7 +151,8 @@ docker_image_tag="${git_repo_branch}.${commit_sha}"
 
 if [[ $PWD == $cloned_repository && ! -e Dockerfile ]]
 then
-  echo "This repository does not contain a Dockerfile, cannot build Docker image"
+  echo "error: this repository does not contain a Dockerfile, cannot build Docker image" 1>&2
+  echo "" 1>&2
   exit 1
 fi
 
