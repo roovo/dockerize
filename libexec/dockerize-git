@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 #
 # Summary: Build images from git repositories
-#
-# Usage: dockerize git [-b|--branch <name>] [-k|--insecure] [--] <repository> [<directory>]
 
 # Help: NAME
 #         dockerize-git - Build a docker image from a git repository
-
+#
 # SYNOPISIS
-#         dockerize git [-b|--branch <name>] [-k|--insecure] [--] <repository> [<directory>]
+#         dockerize git [options] [--] <repository> [<directory>]
 
 # DESCRIPTION
 #         Clones or fetches changes from a git repository, then
 #         builds and tags a docker image from it.
-
+#
 #         The repository must be specified using a valid git URL,
 #         e.g:
 #
@@ -65,6 +63,9 @@
 #             Specify the branch to build. If no branch is given
 #             'master' is assumed.
 #
+#         -h, --help
+#             Show this help information.
+#
 #         -k, --insecure
 #             Don't verify SSL certificates when performing remote
 #             remote git operations (sets the GIT_SSL_NO_VERIFY
@@ -76,8 +77,7 @@ APP_NAME="git"
 
 if [ -z "$(type -p git)" ]
 then
-  echo "Cannot find git. Is git installed and available in the PATH?" 1>&2
-  echo "" 1>&2
+  echo "Cannot find git. Is git installed and available in the PATH?\n" 1>&2
   exit 1
 fi
 
@@ -103,11 +103,11 @@ until [ -z "$1" ]; do
       break
       ;;
     -* )
-      echo "error: unknown option: $1" 1>&2
-      echo "usage: dockerize $APP_NAME [-k|--insecure] [--] <repository>[:branch] [<directory>]" 1>&2
-      echo "" 1>&2
-      echo "       [try \`dockerize $APP_NAME -h\` for more information]" 1>&2
-      echo "" 1>&2
+      echo    "error: unknown option: $1" 1>&2
+      echo -e "usage: dockerize $APP_NAME [options] [--] <repository> [<directory>]\n" 1>&2
+      echo    "    -b, --branch           build from branch" 1>&2
+      echo    "    -h, --help             show detailed help" 1>&2
+      echo -e "    -k, --insecure         don't check SSL certificates\n" 1>&2
       exit 1
       ;;
     * )
@@ -148,8 +148,7 @@ fi
 $__exec "${git_command} checkout -f origin/$git_repo_branch"
 if [ $? -ne 0 ]
 then
-  echo "error: branch $git_repo_branch does not exist" 1>&2
-  echo "" 1>&2
+  echo -e "error: branch $git_repo_branch does not exist\n" 1>&2
   exit 1
 fi
 
@@ -158,8 +157,7 @@ docker_image_tag="${git_repo_branch}.${commit_sha}"
 
 if [[ $PWD == $cloned_repository && ! -e Dockerfile ]]
 then
-  echo "error: this repository does not contain a Dockerfile, cannot build Docker image" 1>&2
-  echo "" 1>&2
+  echo "error: this repository does not contain a Dockerfile, cannot build Docker image/n" 1>&2
   exit 1
 fi
 
