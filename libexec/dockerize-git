@@ -1,46 +1,63 @@
 #!/usr/bin/env bash
 #
 # Summary: Build images from git repositories
-# Usage: dockerize git user/repository[:branch] [docker_image]
+# Usage: dockerize git <repository>[:branch] [<directory>]
+
 # Help: NAME
 #         dockerize-git - Build a docker image from a git repository
-#
+
 # SYNOPISIS
-#         dockerize git <repository> <directory>
-#
+#         dockerize git <repository>[:branch] [<directory>]
+
 # DESCRIPTION
 #         Clones or fetches changes from a git repository, then
 #         builds and tags a docker image from it.
+
+#         The repository must be specified using a valid git URL,
+#         e.g:
 #
-#         The repository is cloned into the directory:
+#         o   dockerize git https://github.com/example/test.git
 #
-#           $HOME/.docker/git_repositories/<directory>
+#         o   dockerize git git@gitlab.example.com:owner/test.git
 #
-#         If the repository has previously been cloned into the
-#         directory, a fetch is instead performed to update the
-#         local copy.
+#         o   dockerize git /path/to/repository/test
+
+#         A local copy of the repository is cloned into the
+#         directory:
 #
-#         The requested branch is then checked out.
+#             $HOME/.docker/git_repositories/<directory>
 #
+#         If the directory has not been specified it is set to
+#         the name of the repository in the URL ('test' in the
+#         examples above).
+#
+#         Whenever the command is run this local copy is updated
+#         with the latest changes and the requested branch is
+#         checked out.
+
 #         If this is the first time this repository has been
-#         dockerized a master image is first
-#         created with the tag 'master'. This master tag
-#         is not related in any way to the master git branch,
-#         it is simply the master docker image from which all
-#         other docker images for this repository are built.
+#         dockerized a master image is first created with the
+#         tag 'master'. This master tag is not related in any
+#         way to the master git branch, it is simply the master
+#         docker image from which all other docker images for
+#         this repository are built.
+#
+#             > docker images
+#             REPOSITORY          TAG         ....
+#             test                master      ....
+#
 #         This is done to help speed up the build process when
 #         creating images.
-#
+
 #         The project's Dockerfile is updated so that the FROM
-#         directive points to the repositories master image,
-#         and then a new image is built using it.  The resultant
+#         directive points to the repository master image, and
+#         then a new image is built using it.  The resultant
 #         image is tagged with the git branch name and short
 #         version of the commit's SHA, e.g:
 #
-#           master.093e707
-
-git_uri="github.com"
-# git_uri="gitlab.nat.bt.com"
+#             > docker images
+#             REPOSITORY          TAG                       ....
+#             test                feature-branch.093e707    ....
 
 if [ -z "$(type -p git)" ]
 then
@@ -50,13 +67,17 @@ fi
 
 if [ -z "$1" ]
 then
-  echo "Must specify a git user/repository"
+  echo "Must specify a git repsoitory URL"
   exit 1
 fi
 
-git_repo_name_and_branch=(${1/:/ })
-git_repo="${git_repo_name_and_branch[0]}"
+git_repo_uri="${1}"
+git_repo_basename=$(basename "$git_repo_uri")
+git_repo_name_and_branch=(${git_repo_basename/:/ })
+git_repo_name="${git_repo_name_and_branch[0]}"
+git_repo="${git_repo_name%.*}"
 git_repo_branch="${git_repo_name_and_branch[1]:-master}"
+
 shift
 
 docker_image="${1:-${git_repo/*\//}}"
@@ -64,7 +85,7 @@ cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
 if [ ! -e "$cloned_repository" ]
 then
-  $__exec "env GIT_SSL_NO_VERIFY=true git clone https://${git_uri}/${git_repo}.git $cloned_repository"
+  $__exec "env GIT_SSL_NO_VERIFY=true git clone ${git_repo_uri} $cloned_repository"
   $__exec "cd $cloned_repository"
 else
   $__exec "cd $cloned_repository && env GIT_SSL_NO_VERIFY=true git fetch"
