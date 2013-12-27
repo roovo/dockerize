@@ -34,15 +34,12 @@ print_summaries() {
 
 print_help() {
   local file="$1"
-  local usage="$(usage "$file")"
+  local help="$(help "$file")"
 
-  if [ -n "$usage" ]; then
-    echo -e "\n$usage\n"
-
-    local help="$(help "$file")"
-    [ -n "$help" ] && echo -e "$help\n"
+  if [ -n "$help" ]; then
+    echo -e "$help\n"
   else
-    echo "Sorry, this command isn't documented yet."
+    echo "Sorry, this command has no help documentation."
   fi
 }
 
