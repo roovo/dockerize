@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Summary: Build images from git repositories
+#
 # Usage: dockerize git [-b|--branch <name>] [-k|--insecure] [--] <repository> [<directory>]
 
 # Help: NAME
@@ -61,7 +62,8 @@
 
 # OPTIONS
 #         -b <name>, --branch <name>
-#             Specify the branch to build.
+#             Specify the branch to build. If no branch is given
+#             'master' is assumed.
 #
 #         -k, --insecure
 #             Don't verify SSL certificates when performing remote
