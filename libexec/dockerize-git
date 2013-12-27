@@ -18,7 +18,7 @@
 #
 #         If the repository has previously been cloned into the
 #         directory, a fetch is instead performed to update the
-#         local repository.
+#         local copy.
 #
 #         The requested branch is then checked out.
 #
@@ -46,56 +46,6 @@ if [ -z "$(type -p git)" ]
 then
   echo "Cannot find git. Is git installed and available in the PATH?"
   exit 1
-fi
-
-git_version="$(git --version | awk '{ print $3 }')"
-git_version_num="${git_version//./}"
-
-if [ "$git_version_num" -lt 1790 ]
-then
-  echo "git v1.7.9.0 or newer required"
-  exit 1
-fi
-
-# Setting up git credentials caching
-# There are 2 requirements for this:
-#   1. git >= 1.7.9
-#   2. git pull via https
-#
-# More info:
-#   * https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html
-#   * https://help.github.com/articles/set-up-git
-#
-if [[ ! -e "$HOME/.git-credentials" && ! -e "$HOME/.no_prompting_for_git_credentials" ]]
-then
-  echo "Should git manage git credentials?"
-  git_credentials_options=(
-    "No, don't manage credentials"
-    "Cache credentials for 10 minutes"
-    "Store credentials in plaintext"
-  )
-  select answer in "${git_credentials_options[@]}"
-  do
-    touch "$HOME/.no_prompting_for_git_credentials"
-
-    case $answer in
-    "${git_credentials_options[0]}" )
-      break
-      ;;
-    "${git_credentials_options[1]}" )
-      git config --global credential.helper cache
-      break
-      ;;
-    "${git_credentials_options[2]}" )
-      git config --global credential.helper store
-      echo "Storing git credentials in plaintext"
-      read -p "Git username: " git_username
-      read -p "Git password: " git_password
-      echo "https://$git_username:$git_password@${git_uri}" > $HOME/.git-credentials
-      break
-      ;;
-    esac
-  done
 fi
 
 if [ -z "$1" ]
