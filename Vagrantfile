@@ -15,48 +15,48 @@ Vagrant::Config.run do |config|
   ]
 
   provision_guest_additions = [
-    "if [ ! -d /opt/VBoxGuestAdditions-4.3.4/ ]; then",
-      "apt-get install -q -y linux-headers-generic-lts-raring dkms",
-      "wget -cq http://dlc.sun.com.edgesuite.net/virtualbox/4.3.4/VBoxGuestAdditions_4.3.4.iso",
-      'echo "f120793fa35050a8280eacf9c930cf8d9b88795161520f6515c0cc5edda2fe8a  VBoxGuestAdditions_4.3.4.iso" | sha256sum --check || exit 1',
-      "mount -o loop,ro /home/vagrant/VBoxGuestAdditions_4.3.4.iso /mnt",
-      "/mnt/VBoxLinuxAdditions.run --nox11",
-      "umount /mnt",
-    "fi",
+    %{if [ ! -d /opt/VBoxGuestAdditions-4.3.4/ ]; then},
+      %{apt-get install -q -y linux-headers-generic-lts-raring dkms},
+      %{wget -cq http://dlc.sun.com.edgesuite.net/virtualbox/4.3.4/VBoxGuestAdditions_4.3.4.iso},
+      %{echo "f120793fa35050a8280eacf9c930cf8d9b88795161520f6515c0cc5edda2fe8a  VBoxGuestAdditions_4.3.4.iso" | sha256sum --check || exit 1},
+      %{mount -o loop,ro /home/vagrant/VBoxGuestAdditions_4.3.4.iso /mnt},
+      %{/mnt/VBoxLinuxAdditions.run --nox11},
+      %{umount /mnt},
+    %{fi},
   ]
 
   backport_kernel = [
-    "tmp=`mktemp -q` && {",
-      'apt-get install -q -y --no-upgrade linux-image-generic-lts-raring | tee "$tmp"',
-      'NUM_INST_PACKAGES=`awk \'$2 == "upgraded," && $4 == "newly" { print $3 }\' "$tmp"`',
-      'rm "$tmp"',
-    "}",
+    %[tmp=`mktemp -q` && {],
+      %[apt-get install -q -y --no-upgrade linux-image-generic-lts-raring | tee "$tmp"],
+      %[NUM_INST_PACKAGES=`awk \'$2 == "upgraded," && $4 == "newly" { print $3 }\' "$tmp"`],
+      %[rm "$tmp"],
+    %[}],
 
-    'if [ "$NUM_INST_PACKAGES" -gt 0 ]; then',
-      'echo ""',
-      'echo "******************************************************************"',
-      'echo "Rebooting to activate new kernel."',
-      'echo ""',
-      'echo "Use \'vagrant halt\' followed by \'vagrant up\' to complete the build."',
-      'echo "******************************************************************"',
-      'shutdown -r now',
-      'exit 0',
-    'fi',
+    %{if [ "$NUM_INST_PACKAGES" -gt 0 ]; then},
+      %{echo ""},
+      %{echo "******************************************************************"},
+      %{echo "Rebooting to activate new kernel."},
+      %{echo ""},
+      %{echo "Use \'vagrant halt\' followed by \'vagrant up\' to complete the build."},
+      %{echo "******************************************************************"},
+      %{shutdown -r now},
+      %{exit 0},
+    %{fi},
   ]
 
   provision_docker = [
-    "if [[ -z $(type -p docker) ]]; then",
-      "wget -q -O - https://get.docker.io/gpg | apt-key add -",
-      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
-      "apt-get update -q; apt-get install -q -y --force-yes lxc-docker",
-      "usermod -a -G docker vagrant",
-    "fi",
+    %{if [[ -z $(type -p docker) ]]; then},
+      %{wget -q -O - https://get.docker.io/gpg | apt-key add -},
+      %{echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list},
+      %{apt-get update -q; apt-get install -q -y --force-yes lxc-docker},
+      %{usermod -a -G docker vagrant},
+    %{fi},
   ]
 
   def provision_docker_proxy
     [
-      "echo \"export http_proxy=#{ENV['http_proxy']}\nexport https_proxy=#{ENV['https_proxy']}\" > /etc/default/docker",
-      'service docker restart',
+      %{echo \"export http_proxy=#{ENV['http_proxy']}\nexport https_proxy=#{ENV['https_proxy']}\" > /etc/default/docker},
+      %{service docker restart},
     ]
   end
 
