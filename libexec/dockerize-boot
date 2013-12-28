@@ -7,7 +7,7 @@
 
 # SYNOPISIS
 #         dockerize boot [--] <image> [<tag>]
-#         dockerize boot [options] [--] <repository> [<directory>]
+#         dockerize boot [options] [--] <repository>
 
 # DESCRIPTION
 #         In the first form runs up a new container from the
@@ -70,7 +70,7 @@ until [ -z "$1" ]; do
     -* )
       echo    "error: unknown option: $1" 1>&2
       echo    "usage: dockerize $APP_NAME [--] <image> [<tag>]" 1>&2
-      echo -e "   or: dockerize $APP_NAME [options] [--] <repository> [<directory>]\n" 1>&2
+      echo -e "   or: dockerize $APP_NAME [options] [--] <repository>\n" 1>&2
       echo    "    -b, --branch           build from branch" 1>&2
       echo    "    -h, --help             show detailed help" 1>&2
       echo -e "    -k, --insecure         don't check SSL certificates\n" 1>&2

@@ -6,7 +6,7 @@
 #         dockerize-git - Build a docker image from a git repository
 #
 # SYNOPISIS
-#         dockerize git [options] [--] <repository> [<directory>]
+#         dockerize git [options] [--] <repository>
 
 # DESCRIPTION
 #         Clones or fetches changes from a git repository, then
@@ -24,11 +24,10 @@
 #         A local copy of the repository is cloned into the
 #         directory:
 #
-#             $HOME/.docker/git_repositories/<directory>
+#             $HOME/.docker/git_repositories/<repository name>
 #
-#         If the directory has not been specified it is set to
-#         the name of the repository in the URL ('test' in the
-#         examples above).
+#         The <repositoy name> is the name of the repository in
+#         the git URL ('test' in the examples above).
 #
 #         Whenever the command is run this local copy is updated
 #         with the latest changes and the requested branch is
@@ -104,7 +103,7 @@ until [ -z "$1" ]; do
       ;;
     -* )
       echo    "error: unknown option: $1" 1>&2
-      echo -e "usage: dockerize $APP_NAME [options] [--] <repository> [<directory>]\n" 1>&2
+      echo -e "usage: dockerize $APP_NAME [options] [--] <repository>\n" 1>&2
       echo    "    -b, --branch           build from branch" 1>&2
       echo    "    -h, --help             show detailed help" 1>&2
       echo -e "    -k, --insecure         don't check SSL certificates\n" 1>&2
@@ -130,11 +129,7 @@ set -- $non_options
 
 git_repo_uri="${1}"
 git_repo_basename=$(basename "$git_repo_uri")
-git_repo_name="${git_repo_basename%.*}"
-
-shift
-
-docker_image="${1:-${git_repo_name/*\//}}"
+docker_image="${git_repo_basename%.*}"
 cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
 if [ ! -e "$cloned_repository" ]
