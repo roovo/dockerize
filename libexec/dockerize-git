@@ -34,33 +34,30 @@
 #         checked out.
 
 #         If this is the first time this repository has been
-#         dockerized a master image is first created with the
-#         tag 'master'. This master tag is not related in any
-#         way to the master git branch, it is simply the master
-#         docker image from which all other docker images for
-#         this repository are built.
+#         dockerized a base image is created (tagged base) from
+#         which all subsequent images are built.
 #
 #             > docker images
 #             REPOSITORY          TAG         ....
-#             test                master      ....
+#             test                base        ....
 #
-#         This is done to help speed up the build process when
-#         creating images.
+#         This is done to help speed up the building of subsequent
+#         images.
 
-#         The project's Dockerfile is updated so that the FROM
-#         directive points to the repository master image, and
-#         then a new image is built using it.  The resultant
-#         image is tagged with the git branch name and short
-#         version of the commit's SHA, e.g:
+#         The normal build process adjusts the project Dockerfile
+#         so that it is built from the base image.  A new image is
+#         created tagged with the git branch name and the commit's
+#         (short version of the) SHA, e.g:
 #
 #             > docker images
-#             REPOSITORY          TAG                       ....
-#             test                feature-branch.093e707    ....
+#             REPOSITORY          TAG                     ....
+#             test                base                    ....
+#             test                some-branch.093e707     ....
 
 # OPTIONS
 #         -b <name>, --branch <name>
 #             Specify the branch to build. If no branch is given
-#             'master' is assumed.
+#             master is assumed.
 #
 #         -h, --help
 #             Show this help information.
@@ -156,16 +153,16 @@ then
   exit 1
 fi
 
-if [[ -z $(dockerize images | grep $docker_image | grep " master ") ]]
+if [[ -z $(dockerize images | grep $docker_image | grep " base ") ]]
 then
-  $__exec "docker build -no-cache -rm -t $docker_image:master ."
+  $__exec "docker build -no-cache -rm -t $docker_image:base ."
 fi
 
 if [[ -n $(dockerize images | grep $docker_image | grep $docker_image_tag) ]]
 then
   echo "Container $docker_image:$docker_image_tag already built"
 else
-  $__exec "sed 's|FROM .*|FROM $docker_image:master|g' Dockerfile > Dockerfile.new"
+  $__exec "sed 's|FROM .*|FROM $docker_image:base|g' Dockerfile > Dockerfile.new"
   $__exec "mv Dockerfile Dockerfile.bak && mv Dockerfile.new Dockerfile"
   $__exec "docker build -no-cache -rm -t $docker_image:$docker_image_tag ."
 fi
