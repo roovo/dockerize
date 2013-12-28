@@ -60,12 +60,23 @@ Vagrant::Config.run do |config|
     ]
   end
 
+  provision_dockerize = [
+    %{export dockerize_version="master"},
+    %{dockerize_source="https://github.com/roovo/dockerize/archive/${dockerize_version}"},
+    %{dockerize_dir="/usr/local/src/dockerize-${dockerize_version}"},
+    %{dockerize_bin="${dockerize_dir}/bin/dockerize"},
+    %{if [[ ! -e $dockerize_bin ]]; then wget -q -O - "${dockerize_source}.tar.gz" | tar -C /usr/local/src -zxv; fi},
+    %{if [[ $(sudo grep -c "$dockerize_bin init" /root/.profile)         == 0 ]]; then sudo sudo echo 'eval \"\$(/usr/local/src/dockerize-'\"${dockerize_version}\"'/bin/dockerize init -)\"' >> /root/.profile;         fi},
+    %{if [[ $(sudo grep -c "$dockerize_bin init" /home/vagrant/.profile) == 0 ]]; then sudo sudo echo 'eval \"\$(/usr/local/src/dockerize-'\"${dockerize_version}\"'/bin/dockerize init -)\"' >> /home/vagrant/.profile; fi},
+  ]
+
   provisioning_script  = ["export DEBIAN_FRONTEND=noninteractive"]
   provisioning_script += provision_essentials
   provisioning_script += provision_guest_additions
   provisioning_script += backport_kernel
   provisioning_script += provision_docker
   provisioning_script += provision_docker_proxy
+  provisioning_script += provision_dockerize
   provisioning_script << %{echo "\nVM ready!\n"}
 
   config.vm.provision :shell, :inline => provisioning_script.join("\n")
