@@ -125,7 +125,7 @@ fi
 
 if [[ -z $($__exec "git show-ref --verify refs/remotes/origin/$git_repo_branch") ]]
 then
-  echo -e "error: branch $git_repo_branch does not exist\n" 1>&2
+  echo "error: branch $git_repo_branch does not exist" 1>&2
   exit 1
 else
   $__exec "git checkout -f origin/$git_repo_branch"
@@ -136,7 +136,7 @@ docker_image_tag="${git_repo_branch}.${commit_sha}"
 
 if [[ $PWD == $cloned_repository && ! -e Dockerfile ]]
 then
-  echo -e "error: this repository does not contain a Dockerfile, cannot build Docker image\n" 1>&2
+  echo "error: this repository does not contain a Dockerfile, cannot build Docker image" 1>&2
   exit 1
 fi
 
