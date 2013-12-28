@@ -9,7 +9,7 @@ Vagrant::Config.run do |config|
   config.vm.box_url   = BOX_URI
 
   provision_essentials = [
-    "apt-get update -q",
+    %{apt-get update -q},
     %{apt-get install -q -y vim},
     %{apt-get install -q -y git-core},
   ]
@@ -45,10 +45,12 @@ Vagrant::Config.run do |config|
   ]
 
   provision_docker = [
-    "wget -q -O - https://get.docker.io/gpg | apt-key add -",
-    "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
-    "apt-get update -q; apt-get install -q -y --force-yes lxc-docker",
-    "usermod -a -G docker vagrant",
+    "if [[ -z $(type -p docker) ]]; then",
+      "wget -q -O - https://get.docker.io/gpg | apt-key add -",
+      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list",
+      "apt-get update -q; apt-get install -q -y --force-yes lxc-docker",
+      "usermod -a -G docker vagrant",
+    "fi",
   ]
 
   def provision_docker_proxy
