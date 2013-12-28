@@ -66,7 +66,7 @@ set -e
 
 APP_NAME="git"
 
-if [ -z "$(type -p git)" ]
+if [[ -z $(type -p git) ]]
 then
   echo "Cannot find git. Is git installed and available in the PATH?\n" 1>&2
   exit 1
@@ -75,7 +75,7 @@ fi
 non_options=
 git_repo_branch="master"
 
-until [ -z "$1" ]; do
+until [[ -z $1 ]]; do
   case $1 in
     --help|-h )
       dockerize help "$APP_NAME"
@@ -103,7 +103,7 @@ until [ -z "$1" ]; do
 
   shift
 
-  if [ "$#" = "0" ]; then
+  if [[ $# == "0" ]]; then
     break
   fi
 done
@@ -115,7 +115,7 @@ git_repo_basename=$(basename "$git_repo_uri")
 docker_image="${git_repo_basename%.*}"
 cloned_repository="$DOCKER_GIT_REPOS/$docker_image"
 
-if [ ! -e "$cloned_repository" ]
+if [[ ! -e $cloned_repository ]]
 then
   $__exec "git clone ${git_repo_uri} $cloned_repository"
   $__exec "cd $cloned_repository"
@@ -124,7 +124,7 @@ else
 fi
 
 $__exec "git checkout -f origin/$git_repo_branch"
-if [ $? -ne 0 ]
+if [[ $? != 0 ]]
 then
   echo -e "error: branch $git_repo_branch does not exist\n" 1>&2
   exit 1
