@@ -135,7 +135,7 @@ docker_image_tag="${git_repo_branch}.${commit_sha}"
 
 if [[ $PWD == $cloned_repository && ! -e Dockerfile ]]
 then
-  echo "error: this repository does not contain a Dockerfile, cannot build Docker image/n" 1>&2
+  echo -e "error: this repository does not contain a Dockerfile, cannot build Docker image\n" 1>&2
   exit 1
 fi
 
