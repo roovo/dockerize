@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-BOX_NAME    = ENV.fetch("BOX_NAME",         "ubuntu")
-BOX_URI     = ENV.fetch("BOX_URI",          "http://files.vagrantup.com/precise64.box")
+BOX_NAME    = ENV.fetch("BOX_NAME", "ubuntu")
+BOX_URI     = ENV.fetch("BOX_URI",  "http://files.vagrantup.com/precise64.box")
 
 Vagrant::Config.run do |config|
   config.vm.box       = BOX_NAME
@@ -53,13 +53,6 @@ Vagrant::Config.run do |config|
     %{fi},
   ]
 
-  def provision_docker_proxy
-    [
-      %{echo \"export http_proxy=#{ENV['http_proxy']}\nexport https_proxy=#{ENV['https_proxy']}\" > /etc/default/docker},
-      %{service docker restart},
-    ]
-  end
-
   provision_dockerize = [
     %{export dockerize_version="master"},
     %{dockerize_source="https://github.com/roovo/dockerize/archive/${dockerize_version}"},
@@ -75,7 +68,6 @@ Vagrant::Config.run do |config|
   provisioning_script += provision_guest_additions
   provisioning_script += backport_kernel
   provisioning_script += provision_docker
-  provisioning_script += provision_docker_proxy
   provisioning_script += provision_dockerize
   provisioning_script << %{echo "\nVM ready!\n"}
 
