@@ -123,11 +123,12 @@ else
   $__exec "cd $cloned_repository && git fetch"
 fi
 
-$__exec "git checkout -f origin/$git_repo_branch"
-if [[ $? != 0 ]]
+if [[ -z $($__exec "git show-ref --verify refs/remotes/origin/$git_repo_branch") ]]
 then
   echo -e "error: branch $git_repo_branch does not exist\n" 1>&2
   exit 1
+else
+  $__exec "git checkout -f origin/$git_repo_branch"
 fi
 
 commit_sha="$($__exec git rev-parse --short HEAD)"
