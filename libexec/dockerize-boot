@@ -34,12 +34,6 @@
 #
 #         -h, --help
 #             Show this help information.
-#
-#         -k, --insecure
-#             Don't verify SSL certificates when performing remote
-#             remote git operations (sets the GIT_SSL_NO_VERIFY
-#             environment variable when running commands). Ignored
-#             if not using the git version of the command.
 
 set -e
 
@@ -60,8 +54,6 @@ until [ -z "$1" ]; do
       dockerize help "$APP_NAME"
       exit 0
       ;;
-    --insecure|-k )
-      ;;
     -- )
       shift
       non_options="$non_options $@"
@@ -72,8 +64,7 @@ until [ -z "$1" ]; do
       echo    "usage: dockerize $APP_NAME [--] <image> [<tag>]" 1>&2
       echo -e "   or: dockerize $APP_NAME [options] [--] <repository>\n" 1>&2
       echo    "    -b, --branch           build from branch" 1>&2
-      echo    "    -h, --help             show detailed help" 1>&2
-      echo -e "    -k, --insecure         don't check SSL certificates\n" 1>&2
+      echo -e "    -h, --help             show detailed help\n" 1>&2
       exit 1
       ;;
     * )
